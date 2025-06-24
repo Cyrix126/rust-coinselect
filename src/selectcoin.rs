@@ -50,20 +50,6 @@ pub fn select_coin(
         return Err(SelectionError::InsufficientFunds);
     }
 
-    println!("Result : {:?} \n", results);
-
-    // debug
-    for all_selection in results.iter() {
-        let all_selected_values = all_selection
-            .0
-            .selected_inputs
-            .iter()
-            .map(|&idx| inputs[idx].value)
-            .collect::<Vec<_>>();
-        println!("Input values : {:?} \n", all_selected_values);
-    }
-    // debug
-
     let best_result = results
         .into_iter()
         .min_by(|a, b| {
@@ -75,14 +61,6 @@ pub fn select_coin(
         })
         .map(|(result, _, _)| result)
         .expect("No selection results found");
-
-    // debug
-    let selected_values = best_result
-        .selected_inputs
-        .iter()
-        .map(|&idx| inputs[idx].value)
-        .collect::<Vec<_>>();
-    println!("Best Result : {:?}", selected_values);
 
     Ok(best_result)
 }
