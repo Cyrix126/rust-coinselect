@@ -1,5 +1,5 @@
 [package]
-name = "rust-coinselect_flutter"
+name = "rust-coinselect-flutter"
 version = "0.1.4"
 edition = "2021"
 description = "A blockchain-agnostic coin selection library built in Rust."
