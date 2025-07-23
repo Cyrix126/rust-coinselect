@@ -669,8 +669,9 @@ impl SseDecode for crate::types::SelectionError {
         return match inner {
             0 => crate::types::SelectionError::InsufficientFunds,
             1 => crate::types::SelectionError::NoSolutionFound,
-            2 => crate::types::SelectionError::NonPositiveFeeRate,
-            3 => crate::types::SelectionError::AbnormallyHighFeeRate,
+            2 => crate::types::SelectionError::NonPositiveTarget,
+            3 => crate::types::SelectionError::NonPositiveFeeRate,
+            4 => crate::types::SelectionError::AbnormallyHighFeeRate,
             _ => unreachable!("Invalid variant for SelectionError: {}", inner),
         };
     }
@@ -724,7 +725,7 @@ impl SseDecode for usize {
 impl SseDecode for crate::types::WasteMetric {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_field0 = <u64>::sse_decode(deserializer);
+        let mut var_field0 = <f32>::sse_decode(deserializer);
         return crate::types::WasteMetric(var_field0);
     }
 }
@@ -867,8 +868,9 @@ impl flutter_rust_bridge::IntoDart for crate::types::SelectionError {
         match self {
             Self::InsufficientFunds => 0.into_dart(),
             Self::NoSolutionFound => 1.into_dart(),
-            Self::NonPositiveFeeRate => 2.into_dart(),
-            Self::AbnormallyHighFeeRate => 3.into_dart(),
+            Self::NonPositiveTarget => 2.into_dart(),
+            Self::NonPositiveFeeRate => 3.into_dart(),
+            Self::AbnormallyHighFeeRate => 4.into_dart(),
             _ => unreachable!(),
         }
     }
@@ -1067,8 +1069,9 @@ impl SseEncode for crate::types::SelectionError {
             match self {
                 crate::types::SelectionError::InsufficientFunds => 0,
                 crate::types::SelectionError::NoSolutionFound => 1,
-                crate::types::SelectionError::NonPositiveFeeRate => 2,
-                crate::types::SelectionError::AbnormallyHighFeeRate => 3,
+                crate::types::SelectionError::NonPositiveTarget => 2,
+                crate::types::SelectionError::NonPositiveFeeRate => 3,
+                crate::types::SelectionError::AbnormallyHighFeeRate => 4,
                 _ => {
                     unimplemented!("");
                 }
@@ -1125,7 +1128,7 @@ impl SseEncode for usize {
 impl SseEncode for crate::types::WasteMetric {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <u64>::sse_encode(self.0, serializer);
+        <f32>::sse_encode(self.0, serializer);
     }
 }
 
