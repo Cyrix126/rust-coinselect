@@ -54,16 +54,18 @@ pub fn select_coin(
         return Err(SelectionError::InsufficientFunds);
     }
 
-    // println!("Coin selection results: {:?}", results);
-
     let best_result = results
         .into_iter()
         .min_by(|a, b| {
-            a.0.waste
-                .0
-                .cmp(&b.0.waste.0)
-                .then_with(|| a.1.cmp(&b.1))
+            a.1.cmp(&b.1) // Compare change amount first (a.1 vs b.1)
+                .then_with(|| {
+                    a.0.waste
+                        .0
+                        .partial_cmp(&b.0.waste.0)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                }) // Then compare waste
                 .then_with(|| a.0.selected_inputs.len().cmp(&b.0.selected_inputs.len()))
+            // Finally compare number of inputs
         })
         .map(|(result, _, _)| result)
         .expect("No selection results found");
@@ -77,8 +79,28 @@ mod test {
     use crate::{
         selectcoin::select_coin,
         types::{CoinSelectionOpt, ExcessStrategy, OutputGroup, SelectionError},
+        utils::effective_value,
     };
-
+    use proptest::prop_assert;
+    use test_strategy::proptest;
+    #[proptest]
+    fn solutions_fulfill_target(inputs: Vec<OutputGroup>, opts: CoinSelectionOpt) {
+        let result = select_coin(&inputs, &opts);
+        if let Ok(selection) = result {
+            let index = selection.selected_inputs;
+            let mut selected_inputs = vec![];
+            for i in index {
+                selected_inputs.push(&inputs[i]);
+            }
+            let total_effective_sum = selected_inputs
+                .iter()
+                .filter_map(|o| effective_value(o, opts.target_feerate).ok())
+                .collect::<Vec<u64>>()
+                .iter()
+                .sum::<u64>();
+            prop_assert!(total_effective_sum >= opts.target_value);
+        }
+    }
     fn setup_basic_output_groups() -> Vec<OutputGroup> {
         vec![
             OutputGroup {
