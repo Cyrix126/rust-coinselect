@@ -37,7 +37,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.10.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1231149253;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 582219135;
 
 // Section: executor
 
@@ -482,6 +482,42 @@ fn wire__crate__algorithms__srd__select_coin_srd_impl(
         },
     )
 }
+fn wire__crate__utils__sum_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "sum",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_a = <u64>::sse_decode(&mut deserializer);
+            let api_b = <u64>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::utils::sum(api_a, api_b)?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
 
 // Section: dart2rust
 
@@ -672,6 +708,7 @@ impl SseDecode for crate::types::SelectionError {
             2 => crate::types::SelectionError::NonPositiveTarget,
             3 => crate::types::SelectionError::NonPositiveFeeRate,
             4 => crate::types::SelectionError::AbnormallyHighFeeRate,
+            5 => crate::types::SelectionError::AbnormallyHighAmount,
             _ => unreachable!("Invalid variant for SelectionError: {}", inner),
         };
     }
@@ -777,6 +814,7 @@ fn pde_ffi_dispatcher_primary_impl(
             data_len,
         ),
         12 => wire__crate__algorithms__srd__select_coin_srd_impl(port, ptr, rust_vec_len, data_len),
+        13 => wire__crate__utils__sum_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -871,6 +909,7 @@ impl flutter_rust_bridge::IntoDart for crate::types::SelectionError {
             Self::NonPositiveTarget => 2.into_dart(),
             Self::NonPositiveFeeRate => 3.into_dart(),
             Self::AbnormallyHighFeeRate => 4.into_dart(),
+            Self::AbnormallyHighAmount => 5.into_dart(),
             _ => unreachable!(),
         }
     }
@@ -1072,6 +1111,7 @@ impl SseEncode for crate::types::SelectionError {
                 crate::types::SelectionError::NonPositiveTarget => 2,
                 crate::types::SelectionError::NonPositiveFeeRate => 3,
                 crate::types::SelectionError::AbnormallyHighFeeRate => 4,
+                crate::types::SelectionError::AbnormallyHighAmount => 5,
                 _ => {
                     unimplemented!("");
                 }
