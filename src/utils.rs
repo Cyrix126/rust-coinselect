@@ -44,7 +44,7 @@ pub fn calculate_accumulated_weight(
     accumulated_weight
 }
 /// sugar to return a SelectionError when overflowing
-pub fn sum(a: u64, b: u64) -> Result<u64> {
+pub(crate) fn sum(a: u64, b: u64) -> Result<u64> {
     a.checked_add(b)
         .ok_or_else(|| SelectionError::AbnormallyHighAmount)
 }
