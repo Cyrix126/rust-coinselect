@@ -1,3 +1,5 @@
+use log::debug;
+
 use crate::{
     algorithms::{
         bnb::select_coin_bnb,
@@ -37,8 +39,10 @@ pub fn select_coin(
         ("knapsack", select_coin_knapsack),
         ("leastchange", select_coin_bnb_leastchange), // Future algorithms can be added here
     ];
+    debug!("Algorithms used to select inputs: bnb, fifo, lowestlarger, knapsack, leastchange");
 
     for (algo_name, algo) in algorithms {
+        debug!("running {algo_name}");
         if let Ok(result) = algo(inputs, options) {
             let input_amount = result
                 .selected_inputs
@@ -49,6 +53,7 @@ pub fn select_coin(
             results.push((result, change, algo_name));
         }
     }
+    debug!("results from all the algos {:?}", results);
 
     if results.is_empty() {
         return Err(SelectionError::InsufficientFunds);
@@ -70,6 +75,7 @@ pub fn select_coin(
         .map(|(result, _, _)| result)
         .expect("No selection results found");
 
+    debug!("best results {:?}", best_result);
     Ok(best_result)
 }
 

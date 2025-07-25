@@ -16,7 +16,12 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 rand = "0.8.5"
-flutter_rust_bridge = "=2.10.0"
+flutter_rust_bridge = { version = "=2.10.0", features = ["log"] }
+log = "0.4"
+simplelog = "0.12"
+lazy_static = "1.4"
+anyhow = "1"
+parking_lot = "0.12"
 
 [dev-dependencies]
 criterion = { version = "0.3", features = ["html_reports"] }
