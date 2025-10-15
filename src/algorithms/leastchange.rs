@@ -86,7 +86,7 @@ pub fn select_coin_bnb_leastchange(
         let estimated_fees = calculate_fee(new_weight, options.target_feerate).unwrap_or(0);
         let required_value = sum(target, estimated_fees)?;
         if new_eff_value >= required_value {
-            let change = new_eff_value - required_value;
+            let change = new_eff_value - target;
             let update = match best {
                 None => true,
                 Some((_, best_change, best_count)) => {
@@ -239,7 +239,7 @@ mod test {
         assert!(!selection_output.selected_inputs.is_empty());
         let mut selected = selection_output.selected_inputs.clone();
         selected.sort();
-        assert_eq!(selected, vec![4, 5, 6, 8, 9]);
+        assert_eq!(selected, vec![3, 6, 9]);
     }
 
     #[test]
