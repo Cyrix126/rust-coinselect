@@ -29,9 +29,10 @@ pub fn select_coin_bnb(
 
     let mut ctx = BnbContext {
         target_for_match: sum(
-            sum(options.target_value, options.min_change_value)?,
-            base_fee.max(options.min_absolute_fee),
+            sum(options.target_value, base_fee.max(options.min_absolute_fee))?,
+            options.min_change_value,
         )?,
+        // target_for_match: sum(options.target_value, base_fee.max(options.min_absolute_fee))?,
         match_range: sum(cost_per_input, cost_per_output)?,
         options: options.clone(),
         tries: 1_000_000,
@@ -39,13 +40,13 @@ pub fn select_coin_bnb(
     };
 
     let mut selected_inputs = vec![];
-
     bnb(&sorted_inputs, &mut selected_inputs, 0, 0, 0, &mut ctx)?;
 
     match ctx.best_solution {
         Some((selected, waste)) => Ok(SelectionOutput {
             selected_inputs: selected,
             waste: WasteMetric(waste),
+            iterations: 1_000_000 - ctx.tries,
         }),
         None => Err(SelectionError::NoSolutionFound),
     }
@@ -66,8 +67,8 @@ fn bnb(
 
     // Calculate current fee based on accumulated weight
     let fee = calculate_fee(acc_weight, ctx.options.target_feerate)
-        .unwrap_or(ctx.options.min_absolute_fee);
-    // .max(ctx.options.min_absolute_fee);
+        .unwrap_or(ctx.options.min_absolute_fee)
+        .max(ctx.options.min_absolute_fee);
 
     // Calculate effective value after fees
     let effective_value = acc_value.saturating_sub(fee);
@@ -77,9 +78,9 @@ fn bnb(
         return Ok(());
     }
 
-    // Check for valid solution (must cover target + min change)
+    // Check for valid solution (must cover target)
     if effective_value >= ctx.target_for_match {
-        let waste = calculate_waste(&ctx.options, acc_value, acc_weight, fee);
+        let waste = calculate_waste(&ctx.options, acc_value, acc_weight, fee)?;
         if ctx.best_solution.is_none() || waste < ctx.best_solution.as_ref().unwrap().1 {
             ctx.best_solution = Some((selected.clone(), waste));
         }
@@ -151,90 +152,31 @@ mod test {
             avg_output_weight: 20,
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: 10_000,
         }
     }
 
     fn test_bnb_solution() {
         // Define the test values
-        let mut values = [
-            OutputGroup {
-                value: 55000,
-                weight: 500,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 400,
-                weight: 200,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 40000,
-                weight: 300,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 25000,
-                weight: 100,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 35000,
-                weight: 150,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 600,
-                weight: 250,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 30000,
-                weight: 120,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 94730,
-                weight: 50,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 29810,
-                weight: 500,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 78376,
-                weight: 200,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 17218,
-                weight: 300,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 13728,
-                weight: 100,
-                input_count: 1,
-                creation_sequence: None,
-            },
+        let values = [
+            OutputGroup::new(55000, 500),
+            OutputGroup::new(400, 200),
+            OutputGroup::new(40000, 300),
+            OutputGroup::new(25000, 100),
+            OutputGroup::new(35000, 150),
+            OutputGroup::new(600, 250),
+            OutputGroup::new(30000, 120),
+            OutputGroup::new(94730, 50),
+            OutputGroup::new(29810, 500),
+            OutputGroup::new(78376, 200),
+            OutputGroup::new(17218, 300),
+            OutputGroup::new(13728, 100),
         ];
 
         // Adjust the target value to ensure it tests for multiple valid solutions
         let opt = bnb_setup_options(195782);
         let ans = select_coin_bnb(&values, &opt);
-        values.sort_by_key(|v| v.value);
+        // values.sort_by_key(|v| v.value);
         if let Ok(selection_output) = ans {
             let expected_solution = vec![1, 5, 11, 6, 4, 2, 9];
             assert_eq!(

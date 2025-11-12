@@ -1,6 +1,6 @@
 use crate::{
     types::{CoinSelectionOpt, OutputGroup, SelectionError, SelectionOutput, WasteMetric},
-    utils::{calculate_fee, calculate_waste, effective_value, sum},
+    utils::{calculate_fee, calculate_waste, sum},
 };
 
 /// Performs coin selection using the Lowest Larger algorithm.
@@ -21,7 +21,7 @@ pub fn select_coin_lowestlarger(
     )?;
 
     let mut sorted_inputs: Vec<_> = inputs.iter().enumerate().collect();
-    sorted_inputs.sort_by_key(|(_, input)| effective_value(input, options.target_feerate));
+    OutputGroup::sort_by_effective_value(&mut sorted_inputs, options.target_feerate)?;
 
     let index = sorted_inputs.partition_point(|(_, input)| {
         if let Ok(fee) = calculate_fee(input.weight, options.target_feerate) {
@@ -64,10 +64,11 @@ pub fn select_coin_lowestlarger(
             accumulated_value,
             accumulated_weight,
             estimated_fees,
-        );
+        )?;
         Ok(SelectionOutput {
             selected_inputs,
             waste: WasteMetric(waste),
+            iterations: 1,
         })
     }
 }
@@ -170,6 +171,7 @@ mod test {
             avg_output_weight: 10,
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: u64::MAX,
         }
     }
 

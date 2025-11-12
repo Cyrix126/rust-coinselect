@@ -2,7 +2,7 @@ use crate::{
     types::{
         CoinSelectionOpt, EffectiveValue, OutputGroup, SelectionError, SelectionOutput, WasteMetric,
     },
-    utils::{calculate_fee, calculate_waste, effective_value, sum},
+    utils::{calculate_fee, calculate_waste, sum},
 };
 use rand::{thread_rng, Rng};
 use std::collections::HashSet;
@@ -16,6 +16,10 @@ pub fn select_coin_knapsack(
         sum(options.target_value, options.min_change_value)?,
         base_fees.max(options.min_absolute_fee),
     )?;
+    // let adjusted_target = sum(
+    //     options.target_value,
+    //     base_fees.max(options.min_absolute_fee),
+    // )?;
 
     let mut smaller_coins = inputs
         .iter()
@@ -26,7 +30,7 @@ pub fn select_coin_knapsack(
                 index,
                 output_group.value,
                 output_group.weight,
-                effective_value(output_group, options.target_feerate),
+                output_group.effective_value(options.target_feerate),
             )
         })
         .collect::<Vec<_>>();
@@ -57,7 +61,7 @@ fn knap_sack(
     let mut best_set_weight: u64 = 0;
     let mut rng = thread_rng();
 
-    for _ in 1..=1000 {
+    for iteration in 1..=1000 {
         for pass in 1..=2 {
             for &(index, value, weight, _eff_value) in smaller_coins {
                 let toss_result: bool = rng.gen_bool(0.5);
@@ -76,11 +80,12 @@ fn knap_sack(
                             accumulated_value,
                             accumulated_weight,
                             estimated_fees,
-                        );
+                        )?;
                         let index_vector: Vec<usize> = selected_inputs.into_iter().collect();
                         return Ok(SelectionOutput {
                             selected_inputs: index_vector,
                             waste: WasteMetric(waste),
+                            iterations: iteration,
                         });
                     } else if accumulated_value >= required_value {
                         if accumulated_value < best_set_value {
@@ -104,11 +109,12 @@ fn knap_sack(
         Err(SelectionError::NoSolutionFound)
     } else {
         let estimated_fees = calculate_fee(best_set_weight, options.target_feerate)?;
-        let waste = calculate_waste(options, best_set_value, best_set_weight, estimated_fees);
+        let waste = calculate_waste(options, best_set_value, best_set_weight, estimated_fees)?;
         let index_vector: Vec<usize> = best_set.into_iter().collect();
         Ok(SelectionOutput {
             selected_inputs: index_vector,
             waste: WasteMetric(waste),
+            iterations: 1000,
         })
     }
 }
@@ -145,6 +151,7 @@ mod test {
             avg_output_weight: 10,
             min_change_value,
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: 10_000,
         }
     }
 
@@ -474,6 +481,7 @@ mod test {
                 avg_output_weight: 10,
                 min_change_value: (0.05 * CENT).round() as u64, // Setting minimum change value = 0.05 CENT. This will make the algorithm to avoid creating small change.
                 excess_strategy: ExcessStrategy::ToChange,
+                max_selection_weight: u64::MAX,
             };
             if let Ok(result) = select_coin_knapsack(&inputs, &options) {
                 // Checking if knapsack selects exactly 2 inputs

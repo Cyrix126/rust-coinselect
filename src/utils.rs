@@ -1,7 +1,9 @@
-use crate::types::{
-    CoinSelectionOpt, EffectiveValue, ExcessStrategy, OutputGroup, SelectionError, Weight,
-};
+use crate::types::{CoinSelectionOpt, EffectiveValue, ExcessStrategy, SelectionError, Weight};
 use std::{collections::HashSet, fmt};
+
+impl std::error::Error for SelectionError {}
+
+type Result<T> = std::result::Result<T, SelectionError>;
 
 #[inline]
 pub fn calculate_waste(
@@ -9,22 +11,29 @@ pub fn calculate_waste(
     accumulated_value: u64,
     accumulated_weight: u64,
     estimated_fee: u64,
-) -> f32 {
+) -> Result<f32> {
     // waste =  weight*(target feerate - long term fee rate) + cost of change + excess
     // weight - total weight of selected inputs
     // cost of change - includes the fees paid on this transaction's change output plus the fees that will need to be paid to spend it later. If there is no change output, the cost is 0.
     // excess - refers to the difference between the sum of selected inputs and the amount we need to pay (the sum of output values and fees). There shouldn’t be any excess if there is a change output.
 
-    let mut waste = accumulated_weight as f32
+    let mut waste = (accumulated_weight as f32)
         * (options.target_feerate - options.long_term_feerate.unwrap_or(0.0));
-    if options.excess_strategy == ExcessStrategy::ToChange {
-        // Change is created if excess strategy is set to ToChange. Hence cost of change is added.
+    let target_with_min_change = sum(
+        sum(options.target_value, estimated_fee)?,
+        sum(options.change_cost, options.min_change_value)?,
+    )?;
+    if options.excess_strategy == ExcessStrategy::ToChange
+        && accumulated_value >= target_with_min_change
+    {
+        // Change is created if excess strategy is set to ToChange and the accumulated value is enough to create a change. Hence cost of change is added.
         waste += options.change_cost as f32;
     } else {
-        // Change is not created if excess strategy is ToFee or ToRecipient. Hence check 'excess' that's been passed ahead.
-        waste += (accumulated_value.saturating_sub(options.target_value + estimated_fee)) as f32;
+        // Change is not created if excess strategy is ToFee or ToRecipient or if accumulated value is under the target + cost of change. Hence check 'excess' that's been passed ahead.
+        waste +=
+            (accumulated_value.saturating_sub(sum(options.target_value, estimated_fee)?)) as f32;
     }
-    waste
+    Ok(waste)
 }
 
 /// `adjusted_target` is the target value plus the estimated fee.
@@ -46,43 +55,44 @@ pub fn calculate_accumulated_weight(
 /// sugar to return a SelectionError when overflowing
 pub(crate) fn sum(a: u64, b: u64) -> Result<u64> {
     a.checked_add(b)
-        .ok_or_else(|| SelectionError::AbnormallyHighAmount)
+        .ok_or(SelectionError::AbnormallyHighAmount)
 }
 
 impl fmt::Display for SelectionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SelectionError::NonPositiveFeeRate => write!(f, "Negative fee rate"),
+            SelectionError::NegativeFeeRate => write!(f, "Negative fee rate"),
             SelectionError::NonPositiveTarget => write!(f, "Target value must be positive"),
             SelectionError::AbnormallyHighFeeRate => write!(f, "Abnormally high fee rate"),
             SelectionError::InsufficientFunds => write!(f, "The Inputs funds are insufficient"),
             SelectionError::NoSolutionFound => write!(f, "No solution could be derived"),
             SelectionError::AbnormallyHighAmount => write!(f, "Abnormally high amount"),
+            SelectionError::LowerThanFeeChangeCost => write!(
+                f,
+                "Change cost is lower than the fee to create a new output"
+            ),
+            SelectionError::IterationLimitReached => {
+                write!(f, "Iteration limit of the algorithm has been reached")
+            }
+            SelectionError::MaxWeightExceeded => {
+                write!(
+                    f,
+                    "The total weight of selected inputs is exceed the max weight given"
+                )
+            }
         }
     }
 }
 
-impl std::error::Error for SelectionError {}
-
-type Result<T> = std::result::Result<T, SelectionError>;
-
 #[inline]
 pub fn calculate_fee(weight: u64, rate: f32) -> Result<u64> {
-    if rate <= 0.0 {
-        Err(SelectionError::NonPositiveFeeRate)
+    if rate < 0.0 {
+        Err(SelectionError::NegativeFeeRate)
     } else if rate > 1000.0 {
         Err(SelectionError::AbnormallyHighFeeRate)
     } else {
         Ok((weight as f32 * rate).ceil() as u64)
     }
-}
-
-/// Returns the effective value of the `OutputGroup`, which is the actual value minus the estimated fee.
-#[inline]
-pub fn effective_value(output: &OutputGroup, feerate: f32) -> Result<u64> {
-    Ok(output
-        .value
-        .saturating_sub(calculate_fee(output.weight, feerate)?))
 }
 
 /// Returns the weights of data in transaction other than the list of inputs that would be selected.
@@ -118,6 +128,7 @@ mod tests {
             avg_output_weight: 10,
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: u64::MAX,
         }
     }
 
@@ -147,7 +158,7 @@ mod tests {
             TestVector {
                 weight: 60,
                 fee: -5.0,
-                output: Err(SelectionError::NonPositiveFeeRate),
+                output: Err(SelectionError::NegativeFeeRate),
             },
             TestVector {
                 weight: 60,
@@ -157,7 +168,7 @@ mod tests {
             TestVector {
                 weight: 60,
                 fee: 0.0,
-                output: Err(SelectionError::NonPositiveFeeRate),
+                output: Ok(0),
             },
         ];
 
@@ -228,7 +239,7 @@ mod tests {
                     creation_sequence: None,
                 },
                 feerate: -1.0,
-                result: Err(SelectionError::NonPositiveFeeRate),
+                result: Err(SelectionError::NegativeFeeRate),
             },
             // Test very high fee rate
             TestVector {
@@ -255,7 +266,7 @@ mod tests {
         ];
 
         for vector in test_vectors {
-            let effective_value = effective_value(&vector.output, vector.feerate);
+            let effective_value = vector.output.effective_value(vector.feerate);
 
             match effective_value {
                 Ok(val) => {
@@ -334,7 +345,7 @@ mod tests {
                 vector.estimated_fee,
             );
 
-            assert_eq!(waste, vector.result)
+            assert_eq!(waste, Ok(vector.result))
         }
     }
 }

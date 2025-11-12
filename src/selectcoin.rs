@@ -3,11 +3,11 @@ use log::debug;
 use crate::{
     algorithms::{
         bnb::select_coin_bnb,
+        coin_grinder::coin_grinder,
         fifo::select_coin_fifo,
         knapsack::select_coin_knapsack,
         leastchange::select_coin_bnb_leastchange,
-        lowestlarger::select_coin_lowestlarger,
-        // srd::select_coin_srd,
+        lowestlarger::select_coin_lowestlarger, // srd::select_coin_srd,
     },
     types::{CoinSelectionOpt, OutputGroup, SelectionError, SelectionOutput},
 };
@@ -32,6 +32,7 @@ pub fn select_coin(
     sorted_inputs.sort_by(|a, b| a.value.cmp(&b.value));
 
     let algorithms: Vec<(&str, CoinSelectionFn)> = vec![
+        ("coin_grinder", coin_grinder),
         ("bnb", select_coin_bnb),
         // ("srd", select_coin_srd),
         ("fifo", select_coin_fifo),
@@ -39,7 +40,7 @@ pub fn select_coin(
         ("knapsack", select_coin_knapsack),
         ("leastchange", select_coin_bnb_leastchange), // Future algorithms can be added here
     ];
-    debug!("Algorithms used to select inputs: bnb, fifo, lowestlarger, knapsack, leastchange");
+    debug!("Algorithms used to select inputs: coin_grinder, bnb, fifo, lowestlarger, knapsack, leastchange");
 
     for (algo_name, algo) in algorithms {
         debug!("running {algo_name}");
@@ -85,7 +86,6 @@ mod test {
     use crate::{
         selectcoin::select_coin,
         types::{CoinSelectionOpt, ExcessStrategy, OutputGroup, SelectionError},
-        utils::effective_value,
     };
     use proptest::prop_assert;
     use test_strategy::proptest;
@@ -100,7 +100,7 @@ mod test {
             }
             let total_effective_sum = selected_inputs
                 .iter()
-                .filter_map(|o| effective_value(o, opts.target_feerate).ok())
+                .filter_map(|o| o.effective_value(opts.target_feerate).ok())
                 .collect::<Vec<u64>>()
                 .iter()
                 .sum::<u64>();
@@ -197,6 +197,7 @@ mod test {
             avg_output_weight: 10,
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: u64::MAX,
         }
     }
 
@@ -268,6 +269,7 @@ mod test {
             avg_output_weight: 25,
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: u64::MAX,
         };
 
         // Call the select_coin function, which should internally use the lowest_larger algorithm
@@ -332,6 +334,7 @@ mod test {
             min_change_value: 500,
             long_term_feerate: Some(0.5),
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: u64::MAX,
         };
 
         let selection_result = select_coin(&inputs, &options).unwrap();
@@ -378,6 +381,7 @@ mod test {
             min_change_value: 400,
             long_term_feerate: Some(0.5),
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: u64::MAX,
         };
 
         let inputs_case = create_fifo_inputs(vec![80000, 70000, 60000, 50000, 40000, 30000]);
@@ -433,6 +437,7 @@ mod test {
             min_change_value: 400,
             long_term_feerate: Some(0.5),
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: u64::MAX,
         };
         let ans = select_coin(&inputs, &opt);
 
@@ -459,36 +464,11 @@ mod test {
     fn test_select_coin_equals_leastchange_bnb() {
         // Inputs designed so that only one combination gives minimal change
         let inputs = vec![
-            OutputGroup {
-                value: 1000,
-                weight: 10,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 2000,
-                weight: 10,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 3000,
-                weight: 10,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 4000,
-                weight: 10,
-                input_count: 1,
-                creation_sequence: None,
-            },
-            OutputGroup {
-                value: 5500,
-                weight: 10,
-                input_count: 1,
-                creation_sequence: None,
-            },
+            OutputGroup::new(1000, 10),
+            OutputGroup::new(2000, 10),
+            OutputGroup::new(3000, 10),
+            OutputGroup::new(4000, 10),
+            OutputGroup::new(5500, 10),
         ];
 
         let options = CoinSelectionOpt {
@@ -503,6 +483,7 @@ mod test {
             min_change_value: 400,
             long_term_feerate: Some(0.5),
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: u64::MAX,
         };
 
         let result = select_coin(&inputs, &options);
@@ -512,6 +493,6 @@ mod test {
 
         let mut selected = selection_output.selected_inputs.clone();
         selected.sort();
-        assert_eq!(selected, vec![0, 2, 3, 4]);
+        assert_eq!(selected, vec![2, 3, 4]);
     }
 }

@@ -4,7 +4,7 @@ use crate::{
 };
 
 /// Performs coin selection using the First-In-First-Out (FIFO) algorithm.
-///
+/// The selection can produce a change output
 /// Returns `NoSolutionFound` if no solution is found.
 pub fn select_coin_fifo(
     inputs: &[OutputGroup],
@@ -16,7 +16,7 @@ pub fn select_coin_fifo(
     let mut estimated_fees: u64 = 0;
     let base_fees = calculate_fee(options.base_weight, options.target_feerate).unwrap_or_default();
     let target = sum(
-        sum(options.target_value, options.min_change_value)?,
+        options.target_value,
         base_fees.max(options.min_absolute_fee),
     )?;
 
@@ -37,9 +37,24 @@ pub fn select_coin_fifo(
 
     sorted_inputs.extend(inputs_without_sequence);
 
+    let mut change_used = false;
     for (index, inputs) in sorted_inputs {
         estimated_fees = calculate_fee(accumulated_weight, options.target_feerate)?;
-        if accumulated_value >= sum(target, estimated_fees)? {
+        let target_and_fees_without_change = sum(target, estimated_fees)?;
+        if accumulated_value >= target_and_fees_without_change {
+            if options
+                .change_left_from_effective_value(accumulated_value - estimated_fees)
+                .is_ok_and(|x| x.is_some())
+            {
+                // If the value is equal or above the target and the added cost of a change +
+                // the dust limit, we add the weight of the change to the weight, because a change will be present
+                accumulated_weight = sum(accumulated_weight, options.change_weight)?;
+                // The estimated fee will be increased because of this new output.
+                // Theses fees are already taken into account in the previous target
+                // because the minimum target with a change include the change_cost
+                estimated_fees = sum(estimated_fees, options.avg_output_weight)?;
+                change_used = true;
+            }
             break;
         }
         accumulated_value = sum(accumulated_value, inputs.value)?;
@@ -47,17 +62,24 @@ pub fn select_coin_fifo(
         selected_inputs.push(index);
     }
     if accumulated_value < sum(target, estimated_fees)? {
-        Err(SelectionError::InsufficientFunds)
+        // If the change_cost value given is under the real change cost value,
+        // it will cause the accumulated_value to be lower than the required fees
+        if change_used {
+            Err(SelectionError::LowerThanFeeChangeCost)
+        } else {
+            Err(SelectionError::InsufficientFunds)
+        }
     } else {
         let waste: f32 = calculate_waste(
             options,
             accumulated_value,
             accumulated_weight,
             estimated_fees,
-        );
+        )?;
         Ok(SelectionOutput {
             selected_inputs,
             waste: WasteMetric(waste),
+            iterations: 1,
         })
     }
 }
@@ -134,6 +156,7 @@ mod test {
             avg_output_weight: 10,
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: 10_000,
         }
     }
 

@@ -2,7 +2,7 @@ use std::vec;
 
 use crate::{
     types::{CoinSelectionOpt, OutputGroup, SelectionError, SelectionOutput, WasteMetric},
-    utils::{calculate_fee, calculate_waste, effective_value, sum},
+    utils::{calculate_fee, calculate_waste, sum},
 };
 
 /// A Branch and Bound state for Least Change selection which stores the state while traversing the tree.
@@ -31,7 +31,7 @@ pub fn select_coin_bnb_leastchange(
         .iter()
         .enumerate()
         .filter_map(
-            |(i, inp)| match effective_value(inp, options.target_feerate) {
+            |(i, inp)| match inp.effective_value(options.target_feerate) {
                 Ok(net_value) if net_value > 0 => Some((i, inp.value, inp.weight)),
                 _ => None,
             },
@@ -111,11 +111,12 @@ pub fn select_coin_bnb_leastchange(
         let total_value: u64 = selected_inputs.iter().map(|&i| inputs[i].value).sum();
         let total_weight: u64 = selected_inputs.iter().map(|&i| inputs[i].weight).sum();
         let estimated_fees = calculate_fee(total_weight, options.target_feerate).unwrap_or(0);
-        let waste = calculate_waste(options, total_value, total_weight, estimated_fees);
+        let waste = calculate_waste(options, total_value, total_weight, estimated_fees)?;
 
         Ok(SelectionOutput {
             selected_inputs,
             waste: WasteMetric(waste),
+            iterations: 1,
         })
     } else {
         Err(SelectionError::InsufficientFunds)
@@ -226,6 +227,7 @@ mod test {
             avg_output_weight: 10,
             min_change_value: 100,
             excess_strategy: ExcessStrategy::ToRecipient,
+            max_selection_weight: u64::MAX,
         }
     }
 

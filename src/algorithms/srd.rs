@@ -51,11 +51,12 @@ pub fn select_coin_srd(
         accumulated_value,
         accumulated_weight,
         estimated_fee,
-    );
+    )?;
 
     Ok(SelectionOutput {
         selected_inputs,
         waste: WasteMetric(waste),
+        iterations: 1,
     })
 }
 
@@ -132,6 +133,7 @@ mod test {
             avg_output_weight: 10,
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
+            max_selection_weight: u64::MAX,
         }
     }
 

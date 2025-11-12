@@ -1,12 +1,14 @@
 #[cfg(test)]
 use test_strategy::Arbitrary;
+
+use crate::utils::{calculate_fee, sum};
 /// Represents an input candidate for Coinselection, either as a single UTXO or a group of UTXOs.
 ///
 /// A [`OutputGroup`] can be a single UTXO or a group that should be spent together.
 /// Grouping UTXOs belonging to a single address is privacy preserving than grouping UTXOs belonging to different addresses.
 /// In the UTXO model the output of a transaction is used as the input for the new transaction and hence the name [`OutputGroup`]
 /// The library user must craft this structure correctly, as incorrect representation can lead to incorrect selection results.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, PartialEq)]
 #[cfg_attr(test, derive(Arbitrary))]
 pub struct OutputGroup {
     /// Total value of the UTXO(s) that this `WeightedValue` represents.
@@ -17,6 +19,7 @@ pub struct OutputGroup {
     /// and `scriptWitness` should all be included.
     pub weight: u64,
     /// The total number of inputs
+    #[cfg_attr(test, strategy(0..1usize))]
     pub input_count: usize,
     /// Specifies the relative creation sequence for this group, used only for FIFO selection.
     ///
@@ -25,8 +28,52 @@ pub struct OutputGroup {
     pub creation_sequence: Option<u32>,
 }
 
+impl OutputGroup {
+    /// Simple helper that ignore fewer used fields
+    pub fn new(value: u64, weight: u64) -> Self {
+        Self {
+            value,
+            weight,
+            input_count: 1,
+            creation_sequence: None,
+        }
+    }
+    /// Returns the effective value of the `OutputGroup`, which is the actual value minus the estimated fee.
+    pub fn effective_value(&self, feerate: f32) -> Result<u64, SelectionError> {
+        Ok(self
+            .value
+            .saturating_sub(calculate_fee(self.weight, feerate)?))
+    }
+
+    /// Can not implement Ord since we need an external data (feerate)
+    /// usize is the index to keep track of the original order, so that
+    /// algorithms can return only the index of the selected output
+    pub(crate) fn sort_by_effective_value(
+        outputs: &mut Vec<(usize, &OutputGroup)>,
+        feerate: f32,
+    ) -> Result<(), SelectionError> {
+        // Check for errors
+        let mut effective_values: Vec<u64> = Vec::with_capacity(outputs.len());
+        for u in outputs.iter() {
+            effective_values.push(u.1.effective_value(feerate)?);
+        }
+
+        outputs.sort_by(|a, b| {
+            let a_eff =
+                a.1.effective_value(feerate)
+                    .expect("We checked the overflow");
+            let b_eff =
+                b.1.effective_value(feerate)
+                    .expect("We checked the overflow");
+            b_eff.cmp(&a_eff).then(a.1.weight.cmp(&b.1.weight))
+        });
+
+        Ok(())
+    }
+}
+
 /// Options required to compute fees and waste metric.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 #[cfg_attr(test, derive(Arbitrary))]
 pub struct CoinSelectionOpt {
     /// The value we need to select.
@@ -43,9 +90,9 @@ pub struct CoinSelectionOpt {
     /// Lowest possible transaction fee required to get a transaction included in a block
     pub min_absolute_fee: u64,
 
-    /// Weights of data in transaction other than the list of inputs that would be selected.
+    /// Weights of data in transaction other than the list of inputs that would be selected and possible change output.
     ///
-    /// This includes weight of the header, total weight out outputs, weight of fields used
+    /// This includes weight of the header, total weight of outputs excluding the possible change output, weight of fields used
     /// to represent number number of inputs and number outputs, witness etc.,
     pub base_weight: u64,
 
@@ -68,10 +115,34 @@ pub struct CoinSelectionOpt {
 
     /// Strategy to use the excess value other than fee and target
     pub excess_strategy: ExcessStrategy,
+
+    /// Coin Grinder option
+    pub max_selection_weight: u64,
+}
+
+impl CoinSelectionOpt {
+    /// Will give the change value from an effective value, which can be calculated from the sum of selected inputs
+    /// Return None if there is no change
+    /// Return an error if values are abnormall
+    pub fn change_left_from_effective_value(
+        &self,
+        effective_value: u64,
+    ) -> Result<Option<u64>, SelectionError> {
+        let minimum_target_with_change = sum(
+            sum(effective_value, self.change_cost)?,
+            self.min_change_value,
+        )?;
+        if effective_value >= minimum_target_with_change {
+            return Ok(Some(
+                effective_value - (calculate_fee(self.avg_output_weight, self.target_feerate)?),
+            ));
+        }
+        Ok(None)
+    }
 }
 
 /// Strategy to decide what to do with the excess amount.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 #[cfg_attr(test, derive(test_strategy::Arbitrary))]
 pub enum ExcessStrategy {
     /// Adds the excess amount to the transaction fee. This increases the fee rate
@@ -86,6 +157,7 @@ pub enum ExcessStrategy {
     /// Creates a change output with the excess amount. This preserves privacy and
     /// allows reuse of the excess amount in future transactions, but increases
     /// transaction size and creates dust UTXOs if the amount is too small.
+    #[default]
     ToChange,
 }
 
@@ -95,9 +167,15 @@ pub enum SelectionError {
     InsufficientFunds,
     NoSolutionFound,
     NonPositiveTarget,
-    NonPositiveFeeRate,
+    NegativeFeeRate,
     AbnormallyHighFeeRate,
     AbnormallyHighAmount,
+    /// The value of change_cost option given is lower than the added fee to
+    /// create a new output with avg_output_weight option
+    LowerThanFeeChangeCost,
+    IterationLimitReached,
+    /// BnB possible error
+    MaxWeightExceeded,
 }
 
 /// Measures the efficiency of input selection in satoshis, helping evaluate algorithms based on current and long-term fee rates
@@ -116,6 +194,8 @@ pub struct SelectionOutput {
     pub selected_inputs: Vec<usize>,
     /// The waste amount, for the above inputs.
     pub waste: WasteMetric,
+    /// number of iteration executed
+    pub iterations: u32,
 }
 
 /// EffectiveValue type alias
