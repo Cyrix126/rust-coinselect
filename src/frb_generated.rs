@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.11.1";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1500363765;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -825278235;
 
 // Section: executor
 
@@ -320,13 +320,123 @@ fn wire__crate__utils__calculate_waste_impl(
             let api_estimated_fee = <u64>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, ()>((move || {
-                    let output_ok = Result::<_, ()>::Ok(crate::utils::calculate_waste(
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::utils::calculate_waste(
+                            &api_options,
+                            api_accumulated_value,
+                            api_accumulated_weight,
+                            api_estimated_fee,
+                        )?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__algorithms__coin_grinder__coin_grinder_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "coin_grinder",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_weighted_utxos =
+                <Vec<crate::types::OutputGroup>>::sse_decode(&mut deserializer);
+            let api_options = <crate::types::CoinSelectionOpt>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::types::SelectionError>((move || {
+                    let output_ok = crate::algorithms::coin_grinder::coin_grinder(
+                        &api_weighted_utxos,
                         &api_options,
-                        api_accumulated_value,
-                        api_accumulated_weight,
-                        api_estimated_fee,
-                    ))?;
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__types__coin_selection_opt_change_left_from_effective_value_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "coin_selection_opt_change_left_from_effective_value",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <crate::types::CoinSelectionOpt>::sse_decode(&mut deserializer);
+            let api_effective_value = <u64>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::types::SelectionError>((move || {
+                    let output_ok =
+                        crate::types::CoinSelectionOpt::change_left_from_effective_value(
+                            &api_that,
+                            api_effective_value,
+                        )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__types__coin_selection_opt_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "coin_selection_opt_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(crate::types::CoinSelectionOpt::default())?;
                     Ok(output_ok)
                 })())
             }
@@ -371,7 +481,7 @@ fn wire__crate__logger__create_log_stream_impl(
         },
     )
 }
-fn wire__crate__utils__effective_value_impl(
+fn wire__crate__types__excess_strategy_default_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
     rust_vec_len_: i32,
@@ -379,7 +489,7 @@ fn wire__crate__utils__effective_value_impl(
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
         flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "effective_value",
+            debug_name: "excess_strategy_default",
             port: Some(port_),
             mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
         },
@@ -393,16 +503,12 @@ fn wire__crate__utils__effective_value_impl(
             };
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_output = <crate::types::OutputGroup>::sse_decode(&mut deserializer);
-            let api_feerate = <f32>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::utils::effective_value(&api_output, api_feerate)?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(crate::types::ExcessStrategy::default())?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -435,6 +541,108 @@ fn wire__crate__logger__init_logger_impl(
                     let output_ok = Result::<_, ()>::Ok({
                         crate::logger::init_logger();
                     })?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__types__output_group_default_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "output_group_default",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok = Result::<_, ()>::Ok(crate::types::OutputGroup::default())?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__types__output_group_effective_value_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "output_group_effective_value",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_that = <crate::types::OutputGroup>::sse_decode(&mut deserializer);
+            let api_feerate = <f32>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::types::SelectionError>((move || {
+                    let output_ok =
+                        crate::types::OutputGroup::effective_value(&api_that, api_feerate)?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__types__output_group_new_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "output_group_new",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_value = <u64>::sse_decode(&mut deserializer);
+            let api_weight = <u64>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, ()>((move || {
+                    let output_ok =
+                        Result::<_, ()>::Ok(crate::types::OutputGroup::new(api_value, api_weight))?;
                     Ok(output_ok)
                 })())
             }
@@ -825,6 +1033,7 @@ impl SseDecode for crate::types::CoinSelectionOpt {
         let mut var_avgOutputWeight = <u64>::sse_decode(deserializer);
         let mut var_minChangeValue = <u64>::sse_decode(deserializer);
         let mut var_excessStrategy = <crate::types::ExcessStrategy>::sse_decode(deserializer);
+        let mut var_maxSelectionWeight = <u64>::sse_decode(deserializer);
         return crate::types::CoinSelectionOpt {
             target_value: var_targetValue,
             target_feerate: var_targetFeerate,
@@ -837,6 +1046,7 @@ impl SseDecode for crate::types::CoinSelectionOpt {
             avg_output_weight: var_avgOutputWeight,
             min_change_value: var_minChangeValue,
             excess_strategy: var_excessStrategy,
+            max_selection_weight: var_maxSelectionWeight,
         };
     }
 }
@@ -967,6 +1177,17 @@ impl SseDecode for Option<u32> {
     }
 }
 
+impl SseDecode for Option<u64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<u64>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for crate::types::OutputGroup {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1001,9 +1222,12 @@ impl SseDecode for crate::types::SelectionError {
             0 => crate::types::SelectionError::InsufficientFunds,
             1 => crate::types::SelectionError::NoSolutionFound,
             2 => crate::types::SelectionError::NonPositiveTarget,
-            3 => crate::types::SelectionError::NonPositiveFeeRate,
+            3 => crate::types::SelectionError::NegativeFeeRate,
             4 => crate::types::SelectionError::AbnormallyHighFeeRate,
             5 => crate::types::SelectionError::AbnormallyHighAmount,
+            6 => crate::types::SelectionError::LowerThanFeeChangeCost,
+            7 => crate::types::SelectionError::IterationLimitReached,
+            8 => crate::types::SelectionError::MaxWeightExceeded,
             _ => unreachable!("Invalid variant for SelectionError: {}", inner),
         };
     }
@@ -1014,9 +1238,11 @@ impl SseDecode for crate::types::SelectionOutput {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_selectedInputs = <Vec<usize>>::sse_decode(deserializer);
         let mut var_waste = <crate::types::WasteMetric>::sse_decode(deserializer);
+        let mut var_iterations = <u32>::sse_decode(deserializer);
         return crate::types::SelectionOutput {
             selected_inputs: var_selectedInputs,
             waste: var_waste,
+            iterations: var_iterations,
         };
     }
 }
@@ -1090,34 +1316,54 @@ fn pde_ffi_dispatcher_primary_impl(
         5 => wire__crate__utils__calculate_base_weight_btc_impl(port, ptr, rust_vec_len, data_len),
         6 => wire__crate__utils__calculate_fee_impl(port, ptr, rust_vec_len, data_len),
         7 => wire__crate__utils__calculate_waste_impl(port, ptr, rust_vec_len, data_len),
-        8 => wire__crate__logger__create_log_stream_impl(port, ptr, rust_vec_len, data_len),
-        9 => wire__crate__utils__effective_value_impl(port, ptr, rust_vec_len, data_len),
-        10 => wire__crate__logger__init_logger_impl(port, ptr, rust_vec_len, data_len),
-        11 => wire__crate__selectcoin__select_coin_impl(port, ptr, rust_vec_len, data_len),
-        12 => wire__crate__algorithms__bnb__select_coin_bnb_impl(port, ptr, rust_vec_len, data_len),
-        13 => wire__crate__algorithms__leastchange__select_coin_bnb_leastchange_impl(
+        8 => wire__crate__algorithms__coin_grinder__coin_grinder_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        14 => {
+        9 => wire__crate__types__coin_selection_opt_change_left_from_effective_value_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        10 => {
+            wire__crate__types__coin_selection_opt_default_impl(port, ptr, rust_vec_len, data_len)
+        }
+        11 => wire__crate__logger__create_log_stream_impl(port, ptr, rust_vec_len, data_len),
+        12 => wire__crate__types__excess_strategy_default_impl(port, ptr, rust_vec_len, data_len),
+        13 => wire__crate__logger__init_logger_impl(port, ptr, rust_vec_len, data_len),
+        14 => wire__crate__types__output_group_default_impl(port, ptr, rust_vec_len, data_len),
+        15 => {
+            wire__crate__types__output_group_effective_value_impl(port, ptr, rust_vec_len, data_len)
+        }
+        16 => wire__crate__types__output_group_new_impl(port, ptr, rust_vec_len, data_len),
+        17 => wire__crate__selectcoin__select_coin_impl(port, ptr, rust_vec_len, data_len),
+        18 => wire__crate__algorithms__bnb__select_coin_bnb_impl(port, ptr, rust_vec_len, data_len),
+        19 => wire__crate__algorithms__leastchange__select_coin_bnb_leastchange_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        20 => {
             wire__crate__algorithms__fifo__select_coin_fifo_impl(port, ptr, rust_vec_len, data_len)
         }
-        15 => wire__crate__algorithms__knapsack__select_coin_knapsack_impl(
+        21 => wire__crate__algorithms__knapsack__select_coin_knapsack_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        16 => wire__crate__algorithms__lowestlarger__select_coin_lowestlarger_impl(
+        22 => wire__crate__algorithms__lowestlarger__select_coin_lowestlarger_impl(
             port,
             ptr,
             rust_vec_len,
             data_len,
         ),
-        17 => wire__crate__algorithms__srd__select_coin_srd_impl(port, ptr, rust_vec_len, data_len),
-        18 => wire__crate__logger__set_up_rust_logger_impl(port, ptr, rust_vec_len, data_len),
+        23 => wire__crate__algorithms__srd__select_coin_srd_impl(port, ptr, rust_vec_len, data_len),
+        24 => wire__crate__logger__set_up_rust_logger_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1191,6 +1437,7 @@ impl flutter_rust_bridge::IntoDart for crate::types::CoinSelectionOpt {
             self.avg_output_weight.into_into_dart().into_dart(),
             self.min_change_value.into_into_dart().into_dart(),
             self.excess_strategy.into_into_dart().into_dart(),
+            self.max_selection_weight.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1289,9 +1536,12 @@ impl flutter_rust_bridge::IntoDart for crate::types::SelectionError {
             Self::InsufficientFunds => 0.into_dart(),
             Self::NoSolutionFound => 1.into_dart(),
             Self::NonPositiveTarget => 2.into_dart(),
-            Self::NonPositiveFeeRate => 3.into_dart(),
+            Self::NegativeFeeRate => 3.into_dart(),
             Self::AbnormallyHighFeeRate => 4.into_dart(),
             Self::AbnormallyHighAmount => 5.into_dart(),
+            Self::LowerThanFeeChangeCost => 6.into_dart(),
+            Self::IterationLimitReached => 7.into_dart(),
+            Self::MaxWeightExceeded => 8.into_dart(),
             _ => unreachable!(),
         }
     }
@@ -1310,6 +1560,7 @@ impl flutter_rust_bridge::IntoDart for crate::types::SelectionOutput {
         [
             self.selected_inputs.into_into_dart().into_dart(),
             self.waste.into_into_dart().into_dart(),
+            self.iterations.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -1415,6 +1666,7 @@ impl SseEncode for crate::types::CoinSelectionOpt {
         <u64>::sse_encode(self.avg_output_weight, serializer);
         <u64>::sse_encode(self.min_change_value, serializer);
         <crate::types::ExcessStrategy>::sse_encode(self.excess_strategy, serializer);
+        <u64>::sse_encode(self.max_selection_weight, serializer);
     }
 }
 
@@ -1537,6 +1789,16 @@ impl SseEncode for Option<u32> {
     }
 }
 
+impl SseEncode for Option<u64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <u64>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for crate::types::OutputGroup {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -1564,9 +1826,12 @@ impl SseEncode for crate::types::SelectionError {
                 crate::types::SelectionError::InsufficientFunds => 0,
                 crate::types::SelectionError::NoSolutionFound => 1,
                 crate::types::SelectionError::NonPositiveTarget => 2,
-                crate::types::SelectionError::NonPositiveFeeRate => 3,
+                crate::types::SelectionError::NegativeFeeRate => 3,
                 crate::types::SelectionError::AbnormallyHighFeeRate => 4,
                 crate::types::SelectionError::AbnormallyHighAmount => 5,
+                crate::types::SelectionError::LowerThanFeeChangeCost => 6,
+                crate::types::SelectionError::IterationLimitReached => 7,
+                crate::types::SelectionError::MaxWeightExceeded => 8,
                 _ => {
                     unimplemented!("");
                 }
@@ -1581,6 +1846,7 @@ impl SseEncode for crate::types::SelectionOutput {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <Vec<usize>>::sse_encode(self.selected_inputs, serializer);
         <crate::types::WasteMetric>::sse_encode(self.waste, serializer);
+        <u32>::sse_encode(self.iterations, serializer);
     }
 }
 
