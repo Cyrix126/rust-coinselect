@@ -172,6 +172,7 @@ mod test {
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
             max_selection_weight: u64::MAX,
+            max_value: u64::MAX,
         }
     }
 

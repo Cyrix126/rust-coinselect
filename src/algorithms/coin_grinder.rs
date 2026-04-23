@@ -5,7 +5,7 @@
 
 use crate::{
     types::{CoinSelectionOpt, OutputGroup, SelectionError, SelectionOutput},
-    utils::{calculate_fee, calculate_waste, sum},
+    utils::{available_value, calculate_fee, calculate_waste, sum},
 };
 
 const ITERATION_LIMIT: u32 = 100_000;
@@ -158,15 +158,7 @@ pub fn coin_grinder(
         .try_fold(0, u64::checked_add)
         .ok_or(SelectionError::AbnormallyHighAmount)?;
 
-    let available_value = weighted_utxos
-        .iter()
-        .try_fold(Vec::new(), |mut acc, u| {
-            acc.push(u.effective_value(options.target_feerate)?);
-            Ok(acc)
-        })?
-        .into_iter()
-        .try_fold(0, u64::checked_add)
-        .ok_or(SelectionError::AbnormallyHighAmount)?;
+    let available_value = available_value(weighted_utxos, options.target_feerate)?;
 
     let mut weighted_utxos: Vec<(usize, &OutputGroup)> =
         weighted_utxos.iter().enumerate().collect();
@@ -453,6 +445,7 @@ mod tests {
                 min_change_value: 0,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: 100,
+                max_value: 24_000_000 * 100_000,
             },
             inputs: &[
                 OutputGroup::new(10, 8),
@@ -483,6 +476,7 @@ mod tests {
                 min_change_value: 10_000,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: u64::MAX,
+                max_value: u64::MAX,
             },
             inputs: &[
                 OutputGroup::new(100_000_000, 272),
@@ -519,6 +513,7 @@ mod tests {
                 min_change_value: 1_000_000,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: 3000,
+                max_value: u64::MAX,
             },
             inputs: &wu[..],
             expected_utxos: vec![],
@@ -563,6 +558,7 @@ mod tests {
                 min_change_value: 1_000_000,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: 10_000,
+                max_value: u64::MAX,
             },
             inputs: &wu[..],
             expected_utxos: expected,
@@ -590,6 +586,7 @@ mod tests {
                 min_change_value: 1_000_000,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: 400_000,
+                max_value: u64::MAX,
             },
             inputs: &[
                 OutputGroup::new(200_000_000, 592),
@@ -639,6 +636,7 @@ mod tests {
                 min_change_value: 1_000_000,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: 400_000,
+                max_value: u64::MAX,
             },
             inputs: &wu[..],
             expected_utxos: vec![13, 12, 3],
@@ -680,6 +678,7 @@ mod tests {
                 min_change_value: 1_000_000,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: 400_000,
+                max_value: u64::MAX,
             },
             inputs: &wu[..],
             expected_utxos: vec![0, 1, 2, 3],
@@ -724,6 +723,7 @@ mod tests {
                 min_change_value: 1_000_000,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: 400_000,
+                max_value: u64::MAX,
             },
             inputs: &wu[..],
             expected_utxos: vec![1, 2],
@@ -749,6 +749,7 @@ mod tests {
                 min_change_value: 0,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: 100,
+                max_value: u64::MAX,
             },
             inputs: &[
                 OutputGroup::new(10, u64::MAX),
@@ -779,6 +780,7 @@ mod tests {
                 min_change_value: u64::MAX,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: 100,
+                max_value: u64::MAX,
             },
             inputs: &[
                 OutputGroup::new(10, 8),
@@ -809,6 +811,7 @@ mod tests {
                 min_change_value: 0,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: 0,
+                max_value: u64::MAX,
             },
             inputs: &[],
             expected_utxos: vec![],
@@ -836,6 +839,7 @@ mod tests {
                 min_change_value: 100,
                 excess_strategy: crate::types::ExcessStrategy::ToChange,
                 max_selection_weight: 1000,
+                max_value: u64::MAX,
             },
             inputs: &[
                 OutputGroup::new(1006, 592),
@@ -861,9 +865,9 @@ mod tests {
         let mut rng = rand::thread_rng();
         let mut weight_pool: Vec<OutputGroup> = exclusion_set
             .iter()
-            .filter_map(|utxo| {
+            .map(|utxo| {
                 let weight = rng.gen_range(1..u64::MAX);
-                Some(OutputGroup::new(utxo.value, weight))
+                OutputGroup::new(utxo.value, weight)
             })
             .collect();
 
@@ -920,7 +924,7 @@ mod tests {
         let result = coin_grinder(&inputs, &opts);
         match result {
             Ok(r) => {
-                // check that at least one iteration occured
+                // check that at least one iteration occurred
                 prop_assert!(r.iterations > 0);
             }
             Err(SelectionError::AbnormallyHighAmount) => {
@@ -949,12 +953,10 @@ mod tests {
                     .unwrap_or(u64::MAX);
                 prop_assert!(
                     available_value
-                        < (opts
+                        < opts
                             .target_value
-                            .checked_add(opts.min_change_value)
-                            .unwrap_or(u64::MAX)
-                            .checked_add(opts.change_cost)
-                            .unwrap_or(u64::MAX))
+                            .saturating_add(opts.min_change_value)
+                            .saturating_add(opts.change_cost)
                 );
             }
             Err(SelectionError::MaxWeightExceeded) => {

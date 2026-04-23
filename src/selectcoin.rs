@@ -29,7 +29,7 @@ pub fn select_coin(
     let mut results = vec![];
 
     let mut sorted_inputs = inputs.to_vec();
-    sorted_inputs.sort_by(|a, b| a.value.cmp(&b.value));
+    sorted_inputs.sort_by_key(|a| a.value);
 
     let algorithms: Vec<(&str, CoinSelectionFn)> = vec![
         ("coin_grinder", coin_grinder),
@@ -198,6 +198,7 @@ mod test {
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
             max_selection_weight: u64::MAX,
+            max_value: u64::MAX,
         }
     }
 
@@ -270,6 +271,7 @@ mod test {
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
             max_selection_weight: u64::MAX,
+            max_value: u64::MAX,
         };
 
         // Call the select_coin function, which should internally use the lowest_larger algorithm
@@ -335,6 +337,7 @@ mod test {
             long_term_feerate: Some(0.5),
             excess_strategy: ExcessStrategy::ToChange,
             max_selection_weight: u64::MAX,
+            max_value: u64::MAX,
         };
 
         let selection_result = select_coin(&inputs, &options).unwrap();
@@ -382,6 +385,7 @@ mod test {
             long_term_feerate: Some(0.5),
             excess_strategy: ExcessStrategy::ToChange,
             max_selection_weight: u64::MAX,
+            max_value: u64::MAX,
         };
 
         let inputs_case = create_fifo_inputs(vec![80000, 70000, 60000, 50000, 40000, 30000]);
@@ -438,6 +442,7 @@ mod test {
             long_term_feerate: Some(0.5),
             excess_strategy: ExcessStrategy::ToChange,
             max_selection_weight: u64::MAX,
+            max_value: u64::MAX,
         };
         let ans = select_coin(&inputs, &opt);
 
@@ -484,6 +489,7 @@ mod test {
             long_term_feerate: Some(0.5),
             excess_strategy: ExcessStrategy::ToChange,
             max_selection_weight: u64::MAX,
+            max_value: u64::MAX,
         };
 
         let result = select_coin(&inputs, &options);

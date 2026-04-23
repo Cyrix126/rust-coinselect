@@ -27,7 +27,7 @@ pub fn select_coin_fifo(
         .filter(|(_, og)| og.creation_sequence.is_some())
         .collect();
 
-    sorted_inputs.sort_by(|a, b| a.1.creation_sequence.cmp(&b.1.creation_sequence));
+    sorted_inputs.sort_by_key(|a| a.1.creation_sequence);
 
     let inputs_without_sequence: Vec<_> = inputs
         .iter()
@@ -157,6 +157,7 @@ mod test {
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
             max_selection_weight: 10_000,
+            max_value: 21_000_000,
         }
     }
 

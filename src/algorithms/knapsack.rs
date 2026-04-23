@@ -36,7 +36,8 @@ pub fn select_coin_knapsack(
         .collect::<Vec<_>>();
 
     // Sort by effective value descending
-    smaller_coins.sort_by(|(_, _, _, a), (_, _, _, b)| b.unwrap_or(0).cmp(&a.unwrap_or(0)));
+    // smaller_coins.sort_by_key(|(_, _, _, b)| std::cmp::Reverse(b.unwrap_or(0)));
+    smaller_coins.sort_by_key(|(_, _, _, b)| std::cmp::Reverse(b.unwrap_or(0)));
 
     let smaller_coins: Vec<_> = smaller_coins
         .into_iter()
@@ -152,6 +153,7 @@ mod test {
             min_change_value,
             excess_strategy: ExcessStrategy::ToChange,
             max_selection_weight: 10_000,
+            max_value: u64::MAX,
         }
     }
 
@@ -482,6 +484,7 @@ mod test {
                 min_change_value: (0.05 * CENT).round() as u64, // Setting minimum change value = 0.05 CENT. This will make the algorithm to avoid creating small change.
                 excess_strategy: ExcessStrategy::ToChange,
                 max_selection_weight: u64::MAX,
+                max_value: u64::MAX,
             };
             if let Ok(result) = select_coin_knapsack(&inputs, &options) {
                 // Checking if knapsack selects exactly 2 inputs
@@ -499,7 +502,7 @@ mod test {
         // Test with multiple inputs
         let mut inputs: Vec<OutputGroup> = Vec::new();
         let mut amt = 1500;
-        // Increase the input amount startig from 1500 Sats to COIN = 100000000 Sats in multiples of 10
+        // Increase the input amount starting from 1500 Sats to COIN = 100000000 Sats in multiples of 10
         while amt < COIN as u64 {
             inputs.clear();
             // Declare value and weights vectors

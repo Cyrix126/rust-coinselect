@@ -12,11 +12,13 @@ use crate::utils::{calculate_fee, sum};
 #[cfg_attr(test, derive(Arbitrary))]
 pub struct OutputGroup {
     /// Total value of the UTXO(s) that this `WeightedValue` represents.
+    #[cfg_attr(test, strategy(0..u64::pow(10, 19)))]
     pub value: u64,
     /// Total weight of including these UTXO(s) in the transaction.
     ///
     /// The `txin` fields: `prevout`, `nSequence`, `scriptSigLen`, `scriptSig`, `scriptWitnessLen`,
     /// and `scriptWitness` should all be included.
+    #[cfg_attr(test, strategy(0..u64::pow(10, 19)))]
     pub weight: u64,
     /// The total number of inputs
     #[cfg_attr(test, strategy(0..1usize))]
@@ -116,6 +118,9 @@ pub struct CoinSelectionOpt {
     /// Strategy to use the excess value other than fee and target
     pub excess_strategy: ExcessStrategy,
 
+    /// Max value of the coin
+    pub max_value: u64,
+
     /// Coin Grinder option
     pub max_selection_weight: u64,
 }
@@ -176,6 +181,7 @@ pub enum SelectionError {
     IterationLimitReached,
     /// BnB possible error
     MaxWeightExceeded,
+    LongTermFeeRateMissing,
 }
 
 /// Measures the efficiency of input selection in satoshis, helping evaluate algorithms based on current and long-term fee rates

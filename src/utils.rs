@@ -1,4 +1,6 @@
-use crate::types::{CoinSelectionOpt, EffectiveValue, ExcessStrategy, SelectionError, Weight};
+use crate::types::{
+    CoinSelectionOpt, EffectiveValue, ExcessStrategy, OutputGroup, SelectionError, Weight,
+};
 use std::{collections::HashSet, fmt};
 
 impl std::error::Error for SelectionError {}
@@ -54,8 +56,7 @@ pub fn calculate_accumulated_weight(
 }
 /// sugar to return a SelectionError when overflowing
 pub(crate) fn sum(a: u64, b: u64) -> Result<u64> {
-    a.checked_add(b)
-        .ok_or(SelectionError::AbnormallyHighAmount)
+    a.checked_add(b).ok_or(SelectionError::AbnormallyHighAmount)
 }
 
 impl fmt::Display for SelectionError {
@@ -71,6 +72,9 @@ impl fmt::Display for SelectionError {
                 f,
                 "Change cost is lower than the fee to create a new output"
             ),
+            SelectionError::LongTermFeeRateMissing => {
+                write!(f, "bnb algorithm needs the long term fee rate")
+            }
             SelectionError::IterationLimitReached => {
                 write!(f, "Iteration limit of the algorithm has been reached")
             }
@@ -82,6 +86,18 @@ impl fmt::Display for SelectionError {
             }
         }
     }
+}
+
+pub fn available_value(inputs: &[OutputGroup], target_feerate: f32) -> Result<u64> {
+    inputs
+        .iter()
+        .try_fold(Vec::new(), |mut acc, u| {
+            acc.push(u.effective_value(target_feerate)?);
+            Ok(acc)
+        })?
+        .into_iter()
+        .try_fold(0, u64::checked_add)
+        .ok_or(SelectionError::AbnormallyHighAmount)
 }
 
 #[inline]
@@ -129,6 +145,7 @@ mod tests {
             min_change_value: 500,
             excess_strategy: ExcessStrategy::ToChange,
             max_selection_weight: u64::MAX,
+            max_value: u64::MAX,
         }
     }
 

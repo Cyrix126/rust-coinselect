@@ -1034,6 +1034,7 @@ impl SseDecode for crate::types::CoinSelectionOpt {
         let mut var_minChangeValue = <u64>::sse_decode(deserializer);
         let mut var_excessStrategy = <crate::types::ExcessStrategy>::sse_decode(deserializer);
         let mut var_maxSelectionWeight = <u64>::sse_decode(deserializer);
+        let mut var_maxValue = <u64>::sse_decode(deserializer);
         return crate::types::CoinSelectionOpt {
             target_value: var_targetValue,
             target_feerate: var_targetFeerate,
@@ -1047,6 +1048,7 @@ impl SseDecode for crate::types::CoinSelectionOpt {
             min_change_value: var_minChangeValue,
             excess_strategy: var_excessStrategy,
             max_selection_weight: var_maxSelectionWeight,
+            max_value: var_maxValue,
         };
     }
 }
